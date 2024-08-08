@@ -1,21 +1,26 @@
-package assessment.parkinglot.service;
+package assessment.parkinglot.UnitTests.service;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import assessment.parkinglot.behaviors.ParkBehavior;
+import assessment.parkinglot.behavior.ParkBehavior;
+import assessment.parkinglot.domain.Car;
 import assessment.parkinglot.domain.Vehicle;
-import assessment.parkinglot.domain.VehicleFactory;
 import assessment.parkinglot.entities.ParkingSpotEntity;
 import assessment.parkinglot.entities.VehicleEntity;
+import assessment.parkinglot.enums.ErrorCode;
 import assessment.parkinglot.enums.ParkingSpotType;
 import assessment.parkinglot.enums.VehicleType;
+import assessment.parkinglot.exception.PklBadRequestException;
+import assessment.parkinglot.exception.PklErrorException;
 import assessment.parkinglot.repository.ParkingSpotRepository;
 import assessment.parkinglot.repository.VehicleRepository;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
+import assessment.parkinglot.service.ParkingServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -43,11 +48,31 @@ class ParkingServiceImplTest {
         when(parkingSpotRepository.findByTypeAndVehicleIdIsNull(ParkingSpotType.REGULAR))
                 .thenReturn(List.of(new ParkingSpotEntity()));
         when(vehicle.park(parkBehavior)).thenReturn(1L);
+        when(parkBehavior.park(any(Car.class))).thenReturn(1L);
 
         Long vehicleId = parkingService.parkVehicle(VehicleType.CAR);
 
         assertNotNull(vehicleId);
-        assertEquals(0L, vehicleId);
+        assertEquals(1L, vehicleId);
+    }
+
+    @Test
+    void parkVehicleWithMultipleSpotTypes() {
+        Vehicle vehicle = mock(Vehicle.class);
+
+        when(vehicle.getParkingSpotUsageByTypes())
+                .thenReturn(Map.of(ParkingSpotType.COMPACT, 1, ParkingSpotType.REGULAR, 1));
+        when(parkingSpotRepository.findByTypeAndVehicleIdIsNull(ParkingSpotType.COMPACT))
+                .thenReturn(List.of(new ParkingSpotEntity()));
+        when(parkingSpotRepository.findByTypeAndVehicleIdIsNull(ParkingSpotType.REGULAR))
+                .thenReturn(List.of(new ParkingSpotEntity()));
+        when(vehicle.park(parkBehavior)).thenReturn(2L);
+        when(parkBehavior.park(any(Car.class))).thenReturn(2L);
+
+        Long vehicleId = parkingService.parkVehicle(VehicleType.CAR);
+
+        assertNotNull(vehicleId);
+        assertEquals(2L, vehicleId);
     }
 
     @Test
@@ -57,9 +82,13 @@ class ParkingServiceImplTest {
         when(parkingSpotRepository.findByTypeAndVehicleIdIsNull(ParkingSpotType.REGULAR))
                 .thenReturn(Collections.emptyList());
 
-        Long vehicleId = parkingService.parkVehicle(VehicleType.CAR);
+        PklErrorException exception = assertThrows(PklErrorException.class, () -> {
+            parkingService.parkVehicle(VehicleType.CAR);
+        });
 
-        assertNull(vehicleId);
+        ErrorCode error = exception.getError();
+        assertEquals(ErrorCode.NO_SPACE_TO_PARK, error);
+
     }
 
     @Test
@@ -76,14 +105,29 @@ class ParkingServiceImplTest {
     }
 
     @Test
+    void removeVehicleWithMultipleParkingSpots() {
+        VehicleEntity vehicleEntity = VehicleEntity.builder().id(1L).type(VehicleType.VAN).build();
+        when(vehicleRepository.findById(1L)).thenReturn(Optional.of(vehicleEntity));
+        when(parkingSpotRepository.findByVehicleId(1L))
+                .thenReturn(List.of(new ParkingSpotEntity(), new ParkingSpotEntity(), new ParkingSpotEntity()));
+
+        boolean result = parkingService.removeVehicle(1L);
+
+        assertTrue(result);
+        verify(parkingSpotRepository, times(3)).save(any(ParkingSpotEntity.class));
+        verify(vehicleRepository).delete(vehicleEntity);
+    }
+
+    @Test
     void removeVehicleNotFound() {
         when(vehicleRepository.findById(1L)).thenReturn(Optional.empty());
 
-        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+        PklBadRequestException exception = assertThrows(PklBadRequestException.class, () -> {
             parkingService.removeVehicle(1L);
         });
 
-        assertEquals("Unknown Vehicle: 1", exception.getMessage());
+        ErrorCode error = exception.getError();
+        assertEquals(ErrorCode.VEHICLE_NOT_FOUND, error);
     }
 
     @Test
@@ -115,5 +159,17 @@ class ParkingServiceImplTest {
         List<VehicleEntity> result = parkingService.getAllParkedVehicles();
 
         assertEquals(vehicles, result);
+    }
+
+    @Test
+    void areAllSpotsTakenWhenAvailable() {
+        Vehicle vehicle = mock(Vehicle.class);
+        when(vehicle.getParkingSpotUsageByTypes()).thenReturn(Map.of(ParkingSpotType.REGULAR, 1));
+        when(parkingSpotRepository.findByTypeAndVehicleIdIsNull(ParkingSpotType.REGULAR))
+                .thenReturn(List.of(new ParkingSpotEntity()));
+
+        boolean result = parkingService.areAllSpotsTaken(VehicleType.CAR);
+
+        assertFalse(result);
     }
 }

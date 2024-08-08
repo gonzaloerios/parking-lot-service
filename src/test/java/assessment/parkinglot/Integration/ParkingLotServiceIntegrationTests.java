@@ -5,7 +5,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import assessment.parkinglot.controller.requests.ParkRequest;
+import assessment.parkinglot.controller.request.ParkRequest;
 import assessment.parkinglot.entities.VehicleEntity;
 import assessment.parkinglot.enums.ParkingSpotType;
 import assessment.parkinglot.enums.VehicleType;
@@ -27,16 +27,16 @@ import org.springframework.test.web.servlet.MockMvc;
 public class ParkingLotServiceIntegrationTests {
 
   private static final ObjectMapper objectMapper = new ObjectMapper();
-  @Autowired ParkingService parkingService;
+  @Autowired private ParkingService parkingService;
   @Autowired private MockMvc mockMvc;
 
   @Test
   /**
    * Tested Endpoints: - Park van (OK) - Park van (Failed) - All spots taken for a van (FALSE) - All
-   * spots taken for a van (TRUE) - Leave a van
+   * spots taken for a van (TRUE) - Leave a van - Amount of spots available
    *
    * <p>This test involves adding all possible vans and then removing them, while testing the "all
-   * spots taken" status in between.
+   * spots taken" status and "amount of free spots" in between.
    */
   void fullVanPark() throws Exception {
 
@@ -59,15 +59,16 @@ public class ParkingLotServiceIntegrationTests {
     removeAllVehicles();
 
     this.allSpotsTaken(VehicleType.VAN, false);
+    this.availableSpots(ParkingSpotType.REGULAR, 9);
   }
 
   @Test
   /**
    * Tested Endpoints: - Park car (OK) - Park car (Failed) - All spots taken for a car (FALSE) - All
-   * spots taken for a car (TRUE) - Leave a van
+   * spots taken for a car (TRUE) - Leave a car - Amount of spots available
    *
    * <p>This test involves adding all possible cars and then removing them, while testing the "all
-   * spots taken" status in between.
+   * spots taken" status and "amount of free spots" in between.
    */
   void fullCARPark() throws Exception {
 
@@ -90,15 +91,17 @@ public class ParkingLotServiceIntegrationTests {
     removeAllVehicles();
 
     this.allSpotsTaken(VehicleType.CAR, false);
+    this.availableSpots(ParkingSpotType.REGULAR, 9);
+    this.availableSpots(ParkingSpotType.COMPACT, 11);
   }
 
   @Test
   /**
    * Tested Endpoints: - Park motorcycle (OK) - Park motorcycle (Failed) - All spots taken for a
-   * motorcycle (FALSE) - All spots taken for a motorcycle (TRUE) - Leave a van
+   * motorcycle (FALSE) - All spots taken for a motorcycle (TRUE) - Leave a motorcycle - Amount of spots available
    *
    * <p>This test involves adding all possible motorcycles and then removing them, while testing the
-   * "all spots taken" status in between.
+   * "all spots taken" status  and "amount of free spots" in between.
    */
   void fullMotorcyclePark() throws Exception {
 
@@ -119,16 +122,17 @@ public class ParkingLotServiceIntegrationTests {
     removeAllVehicles();
 
     this.allSpotsTaken(VehicleType.MOTORCYCLE, false);
+    this.availableSpots(ParkingSpotType.MOTORCYCLE, 5);
   }
 
   @Test
   /**
    * Test full the parking with vans and then with cars, leave a van, park a car and checks there is
-   * 2 sposts availables and all spots are taken for a van
+   * 2 spots available and all spots are taken for a van
    */
   void noParkingVanSpotWithTwoRegularSpotsAvailable() throws Exception {
 
-    boolean first = true;
+    this.availableSpots(ParkingSpotType.REGULAR, 9);
 
     for (int i = 0; i < 3; i++) {
       this.parkVehicleOk(VehicleType.VAN);
@@ -158,11 +162,15 @@ public class ParkingLotServiceIntegrationTests {
     this.allSpotsTaken(VehicleType.VAN, true);
 
     this.availableSpots(ParkingSpotType.REGULAR, 2);
+
+    removeAllVehicles();
+
+    this.availableSpots(ParkingSpotType.REGULAR, 9);
   }
 
   private void parkVehicleOk(VehicleType type) throws Exception {
 
-    ParkRequest request = ParkRequest.builder().vehicleType(type).build();
+    ParkRequest request = ParkRequest.builder().vehicleType(type.name()).build();
 
     this.mockMvc
         .perform(
@@ -177,7 +185,7 @@ public class ParkingLotServiceIntegrationTests {
 
   private void parkVehicleError(VehicleType type) throws Exception {
 
-    ParkRequest request = ParkRequest.builder().vehicleType(type).build();
+    ParkRequest request = ParkRequest.builder().vehicleType(type.name()).build();
 
     this.mockMvc
         .perform(
@@ -186,7 +194,7 @@ public class ParkingLotServiceIntegrationTests {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andDo(print())
-        .andExpect(status().isNotFound());
+        .andExpect(status().is5xxServerError());
   }
 
   private void allSpotsTaken(VehicleType type, boolean value) throws Exception {

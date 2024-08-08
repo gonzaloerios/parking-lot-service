@@ -1,12 +1,14 @@
-package assessment.parkinglot.behaviors;
+package assessment.parkinglot.behavior;
 
 import assessment.parkinglot.domain.Car;
 import assessment.parkinglot.domain.Motorcycle;
 import assessment.parkinglot.domain.Van;
 import assessment.parkinglot.entities.ParkingSpotEntity;
 import assessment.parkinglot.entities.VehicleEntity;
+import assessment.parkinglot.enums.ErrorCode;
 import assessment.parkinglot.enums.ParkingSpotType;
 import assessment.parkinglot.enums.VehicleType;
+import assessment.parkinglot.exception.PklErrorException;
 import assessment.parkinglot.repository.ParkingSpotRepository;
 import assessment.parkinglot.repository.VehicleRepository;
 import java.util.List;
@@ -41,7 +43,6 @@ public class ParkBehaviorImpl implements ParkBehavior {
   }
 
   @Override
-  @Transactional
   public Long park(Van van) {
     Map<ParkingSpotType, Integer> spotTypes = van.getParkingSpotUsageByTypes();
 
@@ -51,8 +52,18 @@ public class ParkBehaviorImpl implements ParkBehavior {
     return vehicleId;
   }
 
-  @Transactional
   private Long parkVehicle(VehicleEntity vehicleEntity, Map<ParkingSpotType, Integer> spotTypes) {
+
+    try{
+      return this.doPark(vehicleEntity, spotTypes);
+    } catch (Exception e){
+      throw new PklErrorException(ErrorCode.UNABLE_TO_PARK);
+    }
+
+  }
+
+  @Transactional
+  private Long doPark(VehicleEntity vehicleEntity, Map<ParkingSpotType, Integer> spotTypes) {
     vehicleEntity = this.vehicleRepository.save(vehicleEntity);
     final Long vehicleId = vehicleEntity.getId();
 

@@ -1,4 +1,4 @@
-package assessment.parkinglot.controller.requests;
+package assessment.parkinglot.controller.request;
 
 import assessment.parkinglot.enums.VehicleType;
 import lombok.AllArgsConstructor;
@@ -12,5 +12,5 @@ import lombok.NoArgsConstructor;
 @Data
 public class ParkRequest {
 
-  private VehicleType vehicleType;
+  private String vehicleType;
 }

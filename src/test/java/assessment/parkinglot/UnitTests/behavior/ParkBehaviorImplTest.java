@@ -1,16 +1,18 @@
-package assessment.parkinglot.UnitTests;
+package assessment.parkinglot.UnitTests.behavior;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import assessment.parkinglot.behaviors.ParkBehaviorImpl;
+import assessment.parkinglot.behavior.ParkBehaviorImpl;
 import assessment.parkinglot.domain.Car;
 import assessment.parkinglot.domain.Motorcycle;
 import assessment.parkinglot.domain.Van;
 import assessment.parkinglot.entities.ParkingSpotEntity;
 import assessment.parkinglot.entities.VehicleEntity;
+import assessment.parkinglot.enums.ErrorCode;
 import assessment.parkinglot.enums.ParkingSpotType;
 import assessment.parkinglot.enums.VehicleType;
+import assessment.parkinglot.exception.PklErrorException;
 import assessment.parkinglot.repository.ParkingSpotRepository;
 import assessment.parkinglot.repository.VehicleRepository;
 import java.util.List;
@@ -80,5 +82,20 @@ public class ParkBehaviorImplTest {
         assertNotNull(vehicleId);
         verify(parkingSpotRepository, times(3)).save(any(ParkingSpotEntity.class));
         verify(vehicleRepository, times(1)).save(any(VehicleEntity.class));
+    }
+
+    @Test
+    void parkVehicleThrowsException() {
+        Car car = mock(Car.class);
+        when(car.getParkingSpotUsageByTypes()).thenReturn(Map.of(ParkingSpotType.COMPACT, 1));
+        when(vehicleRepository.save(any(VehicleEntity.class))).thenThrow(new RuntimeException("Simulated failure"));
+
+        PklErrorException exception = assertThrows(PklErrorException.class, () -> {
+            parkBehavior.park(car);
+        });
+
+        assertEquals(ErrorCode.UNABLE_TO_PARK, exception.getError());
+        verify(vehicleRepository, times(1)).save(any(VehicleEntity.class));
+        verify(parkingSpotRepository, never()).save(any(ParkingSpotEntity.class));
     }
 }

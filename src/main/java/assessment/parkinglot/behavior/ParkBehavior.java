@@ -1,4 +1,4 @@
-package assessment.parkinglot.behaviors;
+package assessment.parkinglot.behavior;
 
 import assessment.parkinglot.domain.Car;
 import assessment.parkinglot.domain.Motorcycle;

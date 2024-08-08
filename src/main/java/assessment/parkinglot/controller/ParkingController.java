@@ -1,10 +1,12 @@
 package assessment.parkinglot.controller;
 
 
-import assessment.parkinglot.controller.requests.ParkRequest;
+import assessment.parkinglot.controller.request.ParkRequest;
 import assessment.parkinglot.entities.VehicleEntity;
+import assessment.parkinglot.enums.ErrorCode;
 import assessment.parkinglot.enums.ParkingSpotType;
 import assessment.parkinglot.enums.VehicleType;
+import assessment.parkinglot.exception.PklBadRequestException;
 import assessment.parkinglot.service.ParkingService;
 import java.util.List;
 import java.util.Objects;
@@ -34,7 +36,15 @@ public class ParkingController {
     @PostMapping("/park")
     public ResponseEntity<Long> parkVehicle(@RequestBody ParkRequest vehicle) {
 
-        Long vehicleId= parkingService.parkVehicle(vehicle.getVehicleType());
+        VehicleType vehicleType;
+
+        try{
+            vehicleType= VehicleType.valueOf(vehicle.getVehicleType());
+        }catch (Exception e){
+            throw new PklBadRequestException(ErrorCode.UNKNOWN_VEHICLE_TYPE);
+        }
+
+        Long vehicleId= parkingService.parkVehicle(vehicleType);
 
         if( Objects.nonNull(vehicleId)){
             return ResponseEntity.ok(vehicleId);
@@ -50,12 +60,30 @@ public class ParkingController {
     }
 
     @GetMapping("/available-spots/{type}")
-    public ResponseEntity<Long> countAvailableSpots(@PathVariable ParkingSpotType type) {
-        return ResponseEntity.ok(parkingService.countAvailableSpots(type));
+    public ResponseEntity<Long> countAvailableSpots(@PathVariable String type) {
+
+        ParkingSpotType sportType;
+
+        try{
+            sportType= ParkingSpotType.valueOf(type);
+        }catch (Exception e){
+            throw new PklBadRequestException(ErrorCode.UNKNOWN_PARKING_SPOT);
+        }
+
+        return ResponseEntity.ok(parkingService.countAvailableSpots(sportType));
     }
 
-    @GetMapping("/all-spots-taken/{vehicleType}")
-    public ResponseEntity<Boolean> areAllSpotsTaken(@PathVariable VehicleType vehicleType) {
+    @GetMapping("/all-spots-taken/{type}")
+    public ResponseEntity<Boolean> areAllSpotsTaken(@PathVariable String type) {
+
+        VehicleType vehicleType;
+
+        try{
+            vehicleType= VehicleType.valueOf(type);
+        }catch (Exception e){
+            throw new PklBadRequestException(ErrorCode.UNKNOWN_VEHICLE_TYPE);
+        }
+
         return ResponseEntity.ok(parkingService.areAllSpotsTaken(vehicleType));
     }
 

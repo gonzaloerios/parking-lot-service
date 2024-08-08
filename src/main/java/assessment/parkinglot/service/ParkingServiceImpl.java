@@ -1,12 +1,15 @@
 package assessment.parkinglot.service;
 
-import assessment.parkinglot.behaviors.ParkBehavior;
+import assessment.parkinglot.behavior.ParkBehavior;
 import assessment.parkinglot.domain.Vehicle;
 import assessment.parkinglot.domain.VehicleFactory;
 import assessment.parkinglot.entities.ParkingSpotEntity;
 import assessment.parkinglot.entities.VehicleEntity;
+import assessment.parkinglot.enums.ErrorCode;
 import assessment.parkinglot.enums.ParkingSpotType;
 import assessment.parkinglot.enums.VehicleType;
+import assessment.parkinglot.exception.PklBadRequestException;
+import assessment.parkinglot.exception.PklErrorException;
 import assessment.parkinglot.repository.ParkingSpotRepository;
 import assessment.parkinglot.repository.VehicleRepository;
 import java.util.List;
@@ -28,7 +31,8 @@ public class ParkingServiceImpl implements ParkingService {
     if (this.canPark(vehicle)) {
       return vehicle.park(parkBehavior);
     }
-    return null;
+
+    throw new PklErrorException(ErrorCode.NO_SPACE_TO_PARK);
   }
 
   @Override
@@ -36,7 +40,7 @@ public class ParkingServiceImpl implements ParkingService {
   public boolean removeVehicle(Long vehicleId) {
     VehicleEntity vehicle = vehicleRepository.findById(vehicleId).orElse(null);
     if (vehicle == null) {
-      throw new IllegalArgumentException("Unknown Vehicle: " + vehicleId);
+      throw new PklBadRequestException(ErrorCode.VEHICLE_NOT_FOUND);
     }
 
     List<ParkingSpotEntity> occupiedSpots = parkingSpotRepository.findByVehicleId(vehicle.getId());
