@@ -1,6 +1,5 @@
 package assessment.parkinglot.controller.request;
 
-import assessment.parkinglot.enums.VehicleType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

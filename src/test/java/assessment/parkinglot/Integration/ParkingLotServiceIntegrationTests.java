@@ -6,7 +6,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import assessment.parkinglot.controller.request.ParkRequest;
-import assessment.parkinglot.entities.VehicleEntity;
+import assessment.parkinglot.dto.VehicleDTO;
 import assessment.parkinglot.enums.ParkingSpotType;
 import assessment.parkinglot.enums.VehicleType;
 import assessment.parkinglot.service.ParkingService;
@@ -98,10 +98,11 @@ public class ParkingLotServiceIntegrationTests {
   @Test
   /**
    * Tested Endpoints: - Park motorcycle (OK) - Park motorcycle (Failed) - All spots taken for a
-   * motorcycle (FALSE) - All spots taken for a motorcycle (TRUE) - Leave a motorcycle - Amount of spots available
+   * motorcycle (FALSE) - All spots taken for a motorcycle (TRUE) - Leave a motorcycle - Amount of
+   * spots available
    *
    * <p>This test involves adding all possible motorcycles and then removing them, while testing the
-   * "all spots taken" status  and "amount of free spots" in between.
+   * "all spots taken" status and "amount of free spots" in between.
    */
   void fullMotorcyclePark() throws Exception {
 
@@ -144,12 +145,12 @@ public class ParkingLotServiceIntegrationTests {
 
     this.allSpotsTaken(VehicleType.VAN, true);
 
-    List<VehicleEntity> parkedVehicles = this.getAllVehicles();
+    List<VehicleDTO> parkedVehicles = this.getAllVehicles();
 
     Long vanId =
         parkedVehicles.stream()
             .filter(v -> VehicleType.VAN.equals(v.getType()))
-            .map(v -> v.getId())
+            .map(v -> v.getVehicleId())
             .findFirst()
             .orElse(1L);
 
@@ -180,7 +181,8 @@ public class ParkingLotServiceIntegrationTests {
                 .content(objectMapper.writeValueAsString(request)))
         .andDo(print())
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$").isNumber());
+        .andExpect(jsonPath("$.vehicleId").isNumber())
+        .andExpect(jsonPath("$.parked").value(Boolean.TRUE));
   }
 
   private void parkVehicleError(VehicleType type) throws Exception {
@@ -218,23 +220,23 @@ public class ParkingLotServiceIntegrationTests {
                 .contentType(MediaType.APPLICATION_JSON))
         .andDo(print())
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$").value(value));
+        .andExpect(jsonPath("$.freeSpots").value(value));
   }
 
   private void removeAllVehicles() throws Exception {
-    List<VehicleEntity> vehicles = this.getAllVehicles();
+    List<VehicleDTO> vehicles = this.getAllVehicles();
 
     vehicles.forEach(
         v -> {
           try {
-            this.leaveParkVehicle(v.getId());
+            this.leaveParkVehicle(v.getVehicleId());
           } catch (Exception e) {
             throw new RuntimeException(e);
           }
         });
   }
 
-  private List<VehicleEntity> getAllVehicles() throws Exception {
+  private List<VehicleDTO> getAllVehicles() throws Exception {
 
     return this.parkingService.getAllParkedVehicles();
   }
@@ -247,6 +249,8 @@ public class ParkingLotServiceIntegrationTests {
                 .accept(MediaType.APPLICATION_JSON)
                 .contentType(MediaType.APPLICATION_JSON))
         .andDo(print())
-        .andExpect(status().isOk());
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.vehicleId").isNumber())
+        .andExpect(jsonPath("$.parked").value(Boolean.FALSE));
   }
 }

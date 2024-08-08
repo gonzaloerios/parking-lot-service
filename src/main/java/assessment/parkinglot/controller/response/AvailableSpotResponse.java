@@ -1,16 +1,16 @@
 package assessment.parkinglot.controller.response;
 
+import assessment.parkinglot.enums.ParkingSpotType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Builder
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 @Getter
-public class ErrorResponse {
-  private Integer statusCode;
-  private Integer errorCode;
-  private String message;
+public class AvailableSpotResponse {
+  private ParkingSpotType type;
+  private Integer freeSpots;
 }

@@ -3,6 +3,8 @@ package assessment.parkinglot.service;
 import assessment.parkinglot.behavior.ParkBehavior;
 import assessment.parkinglot.domain.Vehicle;
 import assessment.parkinglot.domain.VehicleFactory;
+import assessment.parkinglot.dto.Translator;
+import assessment.parkinglot.dto.VehicleDTO;
 import assessment.parkinglot.entities.ParkingSpotEntity;
 import assessment.parkinglot.entities.VehicleEntity;
 import assessment.parkinglot.enums.ErrorCode;
@@ -14,6 +16,7 @@ import assessment.parkinglot.repository.ParkingSpotRepository;
 import assessment.parkinglot.repository.VehicleRepository;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,9 +27,10 @@ public class ParkingServiceImpl implements ParkingService {
   @Autowired ParkBehavior parkBehavior;
   @Autowired VehicleRepository vehicleRepository;
   @Autowired ParkingSpotRepository parkingSpotRepository;
+  @Autowired Translator translator;
 
   @Override
-  public Long parkVehicle(VehicleType vehicleType) {
+  public VehicleDTO parkVehicle(VehicleType vehicleType) {
     Vehicle vehicle = VehicleFactory.create(vehicleType);
     if (this.canPark(vehicle)) {
       return vehicle.park(parkBehavior);
@@ -37,7 +41,7 @@ public class ParkingServiceImpl implements ParkingService {
 
   @Override
   @Transactional
-  public boolean removeVehicle(Long vehicleId) {
+  public VehicleDTO removeVehicle(Long vehicleId) {
     VehicleEntity vehicle = vehicleRepository.findById(vehicleId).orElse(null);
     if (vehicle == null) {
       throw new PklBadRequestException(ErrorCode.VEHICLE_NOT_FOUND);
@@ -53,7 +57,7 @@ public class ParkingServiceImpl implements ParkingService {
 
     vehicleRepository.delete(vehicle);
 
-    return true;
+    return VehicleDTO.builder().vehicleId(vehicleId).parked(Boolean.FALSE).build();
   }
 
   @Override
@@ -68,8 +72,20 @@ public class ParkingServiceImpl implements ParkingService {
   }
 
   @Override
-  public List<VehicleEntity> getAllParkedVehicles() {
-    return this.vehicleRepository.findAll();
+  public List<VehicleDTO> getAllParkedVehicles() {
+
+    return this.vehicleRepository.findAll().stream()
+        .map(
+            v -> {
+              VehicleDTO dto = translator.toDTO(v);
+              dto.setParked(Boolean.TRUE);
+              dto.setParkedOn(
+                  parkingSpotRepository.findByVehicleId(v.getId()).stream()
+                      .map(pse -> translator.toDTO(pse))
+                      .collect(Collectors.toList()));
+              return dto;
+            })
+        .collect(Collectors.toList());
   }
 
   private boolean canPark(Vehicle vehicle) {

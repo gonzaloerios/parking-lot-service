@@ -2,14 +2,14 @@ package assessment.parkinglot.controller;
 
 
 import assessment.parkinglot.controller.request.ParkRequest;
-import assessment.parkinglot.entities.VehicleEntity;
+import assessment.parkinglot.controller.response.AvailableSpotResponse;
+import assessment.parkinglot.dto.VehicleDTO;
 import assessment.parkinglot.enums.ErrorCode;
 import assessment.parkinglot.enums.ParkingSpotType;
 import assessment.parkinglot.enums.VehicleType;
 import assessment.parkinglot.exception.PklBadRequestException;
 import assessment.parkinglot.service.ParkingService;
 import java.util.List;
-import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -25,52 +25,50 @@ public class ParkingController {
     ParkingService parkingService;
 
     @GetMapping("/status")
-    public ResponseEntity<List<VehicleEntity>> parkedVehicles() {
+    public ResponseEntity<List<VehicleDTO>> parkedVehicles() {
 
-        List<VehicleEntity> parkedVehicles= parkingService.getAllParkedVehicles();
+        List<VehicleDTO> parkedVehicles= parkingService.getAllParkedVehicles();
 
         return ResponseEntity.ok(parkedVehicles);
 
     }
 
     @PostMapping("/park")
-    public ResponseEntity<Long> parkVehicle(@RequestBody ParkRequest vehicle) {
+    public ResponseEntity<VehicleDTO> parkVehicle(@RequestBody ParkRequest parkRequest) {
 
         VehicleType vehicleType;
 
         try{
-            vehicleType= VehicleType.valueOf(vehicle.getVehicleType());
+            vehicleType= VehicleType.valueOf(parkRequest.getVehicleType());
         }catch (Exception e){
             throw new PklBadRequestException(ErrorCode.UNKNOWN_VEHICLE_TYPE);
         }
 
-        Long vehicleId= parkingService.parkVehicle(vehicleType);
+        VehicleDTO vehicle= parkingService.parkVehicle(vehicleType);
 
-        if( Objects.nonNull(vehicleId)){
-            return ResponseEntity.ok(vehicleId);
-        }else{
-            return ResponseEntity.notFound().build();
-        }
+        return ResponseEntity.ok(vehicle);
 
     }
 
     @DeleteMapping("/leave/{vehicleId}")
-    public ResponseEntity<Boolean> removeVehicle(@PathVariable Long vehicleId) {
+    public ResponseEntity<VehicleDTO> removeVehicle(@PathVariable Long vehicleId) {
         return ResponseEntity.ok(parkingService.removeVehicle(vehicleId));
     }
 
     @GetMapping("/available-spots/{type}")
-    public ResponseEntity<Long> countAvailableSpots(@PathVariable String type) {
+    public ResponseEntity<AvailableSpotResponse> countAvailableSpots(@PathVariable String type) {
 
-        ParkingSpotType sportType;
+        ParkingSpotType spotType;
 
         try{
-            sportType= ParkingSpotType.valueOf(type);
+            spotType= ParkingSpotType.valueOf(type);
         }catch (Exception e){
             throw new PklBadRequestException(ErrorCode.UNKNOWN_PARKING_SPOT);
         }
 
-        return ResponseEntity.ok(parkingService.countAvailableSpots(sportType));
+        Long freeSpots= parkingService.countAvailableSpots(spotType);
+
+        return ResponseEntity.ok(AvailableSpotResponse.builder().type(spotType).freeSpots(freeSpots.intValue()).build());
     }
 
     @GetMapping("/all-spots-taken/{type}")

@@ -7,6 +7,9 @@ import assessment.parkinglot.behavior.ParkBehaviorImpl;
 import assessment.parkinglot.domain.Car;
 import assessment.parkinglot.domain.Motorcycle;
 import assessment.parkinglot.domain.Van;
+import assessment.parkinglot.dto.ParkingSpotDTO;
+import assessment.parkinglot.dto.Translator;
+import assessment.parkinglot.dto.VehicleDTO;
 import assessment.parkinglot.entities.ParkingSpotEntity;
 import assessment.parkinglot.entities.VehicleEntity;
 import assessment.parkinglot.enums.ErrorCode;
@@ -25,77 +28,104 @@ import org.mockito.MockitoAnnotations;
 
 public class ParkBehaviorImplTest {
 
-    @Mock private VehicleRepository vehicleRepository;
-    @Mock private ParkingSpotRepository parkingSpotRepository;
+  @Mock private VehicleRepository vehicleRepository;
+  @Mock private ParkingSpotRepository parkingSpotRepository;
+  @Mock private Translator translator;
 
-    @InjectMocks private ParkBehaviorImpl parkBehavior;
+  @InjectMocks private ParkBehaviorImpl parkBehavior;
 
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-    }
+  @BeforeEach
+  void setUp() {
+    MockitoAnnotations.openMocks(this);
+  }
 
-    @Test
-    void parkCarSuccessfully() {
-        Car car = mock(Car.class);
-        when(car.getParkingSpotUsageByTypes()).thenReturn(Map.of(ParkingSpotType.COMPACT, 1));
-        VehicleEntity vehicleEntity = VehicleEntity.builder().id(1L).type(VehicleType.CAR).build();
-        when(vehicleRepository.save(any(VehicleEntity.class))).thenReturn(vehicleEntity);
-        when(parkingSpotRepository.findByTypeAndVehicleIdIsNull(ParkingSpotType.COMPACT))
-                .thenReturn(List.of(new ParkingSpotEntity()));
+  @Test
+  void parkCarSuccessfully() {
+    Car car = mock(Car.class);
+    when(car.getParkingSpotUsageByTypes()).thenReturn(Map.of(ParkingSpotType.COMPACT, 1));
+    VehicleEntity vehicleEntity = VehicleEntity.builder().id(1L).type(VehicleType.CAR).build();
+    when(vehicleRepository.save(any(VehicleEntity.class))).thenReturn(vehicleEntity);
+    when(translator.toDTO(any(VehicleEntity.class)))
+        .thenReturn(VehicleDTO.builder().vehicleId(1L).type(VehicleType.CAR).build());
+    when(parkingSpotRepository.findByTypeAndVehicleIdIsNull(ParkingSpotType.COMPACT))
+        .thenReturn(List.of(new ParkingSpotEntity()));
+    when(translator.toDTO(any(ParkingSpotEntity.class)))
+        .thenReturn(
+            ParkingSpotDTO.builder().parkingSpotId(33L).type(ParkingSpotType.COMPACT).build());
 
-        Long vehicleId = parkBehavior.park(car);
+    VehicleDTO vehicle = parkBehavior.park(car);
 
-        assertNotNull(vehicleId);
-        verify(parkingSpotRepository, times(1)).save(any(ParkingSpotEntity.class));
-        verify(vehicleRepository, times(1)).save(any(VehicleEntity.class));
-    }
+    assertNotNull(vehicle);
+    assertNotNull(vehicle.getVehicleId());
+    assertTrue(vehicle.getParked());
+    verify(parkingSpotRepository, times(1)).save(any(ParkingSpotEntity.class));
+    verify(vehicleRepository, times(1)).save(any(VehicleEntity.class));
+  }
 
+  @Test
+  void parkMotorcycleSuccessfully() {
+    Motorcycle motorcycle = mock(Motorcycle.class);
+    when(motorcycle.getParkingSpotUsageByTypes()).thenReturn(Map.of(ParkingSpotType.MOTORCYCLE, 1));
+    VehicleEntity vehicleEntity =
+        VehicleEntity.builder().id(1L).type(VehicleType.MOTORCYCLE).build();
+    when(vehicleRepository.save(any(VehicleEntity.class))).thenReturn(vehicleEntity);
+    when(translator.toDTO(any(VehicleEntity.class)))
+        .thenReturn(VehicleDTO.builder().vehicleId(1L).type(VehicleType.CAR).build());
+    when(parkingSpotRepository.findByTypeAndVehicleIdIsNull(ParkingSpotType.MOTORCYCLE))
+        .thenReturn(List.of(new ParkingSpotEntity()));
+    when(translator.toDTO(any(ParkingSpotEntity.class)))
+        .thenReturn(
+            ParkingSpotDTO.builder().parkingSpotId(33L).type(ParkingSpotType.MOTORCYCLE).build());
 
-    @Test
-    void parkMotorcycleSuccessfully() {
-        Motorcycle motorcycle = mock(Motorcycle.class);
-        when(motorcycle.getParkingSpotUsageByTypes()).thenReturn(Map.of(ParkingSpotType.MOTORCYCLE, 1));
-        VehicleEntity vehicleEntity = VehicleEntity.builder().id(1L).type(VehicleType.MOTORCYCLE).build();
-        when(vehicleRepository.save(any(VehicleEntity.class))).thenReturn(vehicleEntity);
-        when(parkingSpotRepository.findByTypeAndVehicleIdIsNull(ParkingSpotType.MOTORCYCLE))
-                .thenReturn(List.of(new ParkingSpotEntity()));
+    VehicleDTO vehicle = parkBehavior.park(motorcycle);
 
-        Long vehicleId = parkBehavior.park(motorcycle);
+    assertNotNull(vehicle);
+    assertNotNull(vehicle.getVehicleId());
+    assertTrue(vehicle.getParked());
+    verify(parkingSpotRepository, times(1)).save(any(ParkingSpotEntity.class));
+    verify(vehicleRepository, times(1)).save(any(VehicleEntity.class));
+  }
 
-        assertNotNull(vehicleId);
-        verify(parkingSpotRepository, times(1)).save(any(ParkingSpotEntity.class));
-        verify(vehicleRepository, times(1)).save(any(VehicleEntity.class));
-    }
+  @Test
+  void parkVanSuccessfully() {
+    Van van = mock(Van.class);
+    when(van.getParkingSpotUsageByTypes()).thenReturn(Map.of(ParkingSpotType.REGULAR, 3));
+    VehicleEntity vehicleEntity = VehicleEntity.builder().id(1L).type(VehicleType.VAN).build();
+    when(vehicleRepository.save(any(VehicleEntity.class))).thenReturn(vehicleEntity);
+    when(translator.toDTO(any(VehicleEntity.class)))
+        .thenReturn(VehicleDTO.builder().vehicleId(1L).type(VehicleType.VAN).build());
+    when(parkingSpotRepository.findByTypeAndVehicleIdIsNull(ParkingSpotType.REGULAR))
+        .thenReturn(
+            List.of(new ParkingSpotEntity(), new ParkingSpotEntity(), new ParkingSpotEntity()));
+    when(translator.toDTO(any(ParkingSpotEntity.class)))
+        .thenReturn(
+            ParkingSpotDTO.builder().parkingSpotId(33L).type(ParkingSpotType.REGULAR).build());
 
-    @Test
-    void parkVanSuccessfully() {
-        Van van = mock(Van.class);
-        when(van.getParkingSpotUsageByTypes()).thenReturn(Map.of(ParkingSpotType.REGULAR, 3));
-        VehicleEntity vehicleEntity = VehicleEntity.builder().id(1L).type(VehicleType.VAN).build();
-        when(vehicleRepository.save(any(VehicleEntity.class))).thenReturn(vehicleEntity);
-        when(parkingSpotRepository.findByTypeAndVehicleIdIsNull(ParkingSpotType.REGULAR))
-                .thenReturn(List.of(new ParkingSpotEntity(), new ParkingSpotEntity(), new ParkingSpotEntity()));
+    VehicleDTO vehicle = parkBehavior.park(van);
 
-        Long vehicleId = parkBehavior.park(van);
+    assertNotNull(vehicle);
+    assertNotNull(vehicle.getVehicleId());
+    assertTrue(vehicle.getParked());
+    verify(parkingSpotRepository, times(3)).save(any(ParkingSpotEntity.class));
+    verify(vehicleRepository, times(1)).save(any(VehicleEntity.class));
+  }
 
-        assertNotNull(vehicleId);
-        verify(parkingSpotRepository, times(3)).save(any(ParkingSpotEntity.class));
-        verify(vehicleRepository, times(1)).save(any(VehicleEntity.class));
-    }
+  @Test
+  void parkVehicleThrowsException() {
+    Car car = mock(Car.class);
+    when(car.getParkingSpotUsageByTypes()).thenReturn(Map.of(ParkingSpotType.COMPACT, 1));
+    when(vehicleRepository.save(any(VehicleEntity.class)))
+        .thenThrow(new RuntimeException("Simulated failure"));
 
-    @Test
-    void parkVehicleThrowsException() {
-        Car car = mock(Car.class);
-        when(car.getParkingSpotUsageByTypes()).thenReturn(Map.of(ParkingSpotType.COMPACT, 1));
-        when(vehicleRepository.save(any(VehicleEntity.class))).thenThrow(new RuntimeException("Simulated failure"));
+    PklErrorException exception =
+        assertThrows(
+            PklErrorException.class,
+            () -> {
+              parkBehavior.park(car);
+            });
 
-        PklErrorException exception = assertThrows(PklErrorException.class, () -> {
-            parkBehavior.park(car);
-        });
-
-        assertEquals(ErrorCode.UNABLE_TO_PARK, exception.getError());
-        verify(vehicleRepository, times(1)).save(any(VehicleEntity.class));
-        verify(parkingSpotRepository, never()).save(any(ParkingSpotEntity.class));
-    }
+    assertEquals(ErrorCode.UNABLE_TO_PARK, exception.getError());
+    verify(vehicleRepository, times(1)).save(any(VehicleEntity.class));
+    verify(parkingSpotRepository, never()).save(any(ParkingSpotEntity.class));
+  }
 }

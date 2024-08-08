@@ -3,6 +3,8 @@ package assessment.parkinglot.behavior;
 import assessment.parkinglot.domain.Car;
 import assessment.parkinglot.domain.Motorcycle;
 import assessment.parkinglot.domain.Van;
+import assessment.parkinglot.dto.Translator;
+import assessment.parkinglot.dto.VehicleDTO;
 import assessment.parkinglot.entities.ParkingSpotEntity;
 import assessment.parkinglot.entities.VehicleEntity;
 import assessment.parkinglot.enums.ErrorCode;
@@ -21,51 +23,48 @@ import org.springframework.transaction.annotation.Transactional;
 public class ParkBehaviorImpl implements ParkBehavior {
   @Autowired VehicleRepository vehicleRepository;
   @Autowired ParkingSpotRepository parkingSpotRepository;
+  @Autowired Translator translator;
 
   @Override
-  public Long park(Car car) {
+  public VehicleDTO park(Car car) {
     Map<ParkingSpotType, Integer> spotTypes = car.getParkingSpotUsageByTypes();
 
     VehicleEntity vehicleEntity = VehicleEntity.builder().type(VehicleType.CAR).build();
-    final Long vehicleId = parkVehicle(vehicleEntity, spotTypes);
-
-    return vehicleId;
+    return parkVehicle(vehicleEntity, spotTypes);
   }
 
   @Override
-  public Long park(Motorcycle motorcycle) {
+  public VehicleDTO park(Motorcycle motorcycle) {
     Map<ParkingSpotType, Integer> spotTypes = motorcycle.getParkingSpotUsageByTypes();
 
     VehicleEntity vehicleEntity = VehicleEntity.builder().type(VehicleType.MOTORCYCLE).build();
-    final Long vehicleId = parkVehicle(vehicleEntity, spotTypes);
-
-    return vehicleId;
+    return parkVehicle(vehicleEntity, spotTypes);
   }
 
   @Override
-  public Long park(Van van) {
+  public VehicleDTO park(Van van) {
     Map<ParkingSpotType, Integer> spotTypes = van.getParkingSpotUsageByTypes();
 
     VehicleEntity vehicleEntity = VehicleEntity.builder().type(VehicleType.VAN).build();
-    final Long vehicleId = parkVehicle(vehicleEntity, spotTypes);
-
-    return vehicleId;
+    return parkVehicle(vehicleEntity, spotTypes);
   }
 
-  private Long parkVehicle(VehicleEntity vehicleEntity, Map<ParkingSpotType, Integer> spotTypes) {
+  private VehicleDTO parkVehicle(
+      VehicleEntity vehicleEntity, Map<ParkingSpotType, Integer> spotTypes) {
 
-    try{
+    try {
       return this.doPark(vehicleEntity, spotTypes);
-    } catch (Exception e){
+    } catch (Exception e) {
       throw new PklErrorException(ErrorCode.UNABLE_TO_PARK);
     }
-
   }
 
   @Transactional
-  private Long doPark(VehicleEntity vehicleEntity, Map<ParkingSpotType, Integer> spotTypes) {
+  private VehicleDTO doPark(VehicleEntity vehicleEntity, Map<ParkingSpotType, Integer> spotTypes) {
     vehicleEntity = this.vehicleRepository.save(vehicleEntity);
     final Long vehicleId = vehicleEntity.getId();
+
+    VehicleDTO vehicleDTO = translator.toDTO(vehicleEntity);
 
     for (Map.Entry<ParkingSpotType, Integer> entry : spotTypes.entrySet()) {
 
@@ -78,11 +77,14 @@ public class ParkBehaviorImpl implements ParkBehavior {
             s -> {
               s.setVehicleId(vehicleId);
               this.parkingSpotRepository.save(s);
+              vehicleDTO.getParkedOn().add(translator.toDTO(s));
             });
 
         break;
       }
     }
-    return vehicleId;
+
+    vehicleDTO.setParked(Boolean.TRUE);
+    return vehicleDTO;
   }
 }

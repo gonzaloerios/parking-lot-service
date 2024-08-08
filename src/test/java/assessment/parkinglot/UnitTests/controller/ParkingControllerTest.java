@@ -1,13 +1,20 @@
 package assessment.parkinglot.UnitTests.controller;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
 import assessment.parkinglot.controller.ParkingController;
 import assessment.parkinglot.controller.request.ParkRequest;
-import assessment.parkinglot.entities.VehicleEntity;
+import assessment.parkinglot.controller.response.AvailableSpotResponse;
+import assessment.parkinglot.dto.VehicleDTO;
 import assessment.parkinglot.enums.ErrorCode;
 import assessment.parkinglot.enums.ParkingSpotType;
 import assessment.parkinglot.enums.VehicleType;
 import assessment.parkinglot.exception.PklBadRequestException;
 import assessment.parkinglot.service.ParkingService;
+import java.util.Arrays;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -15,12 +22,6 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.http.ResponseEntity;
 
-import java.util.Arrays;
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 public class ParkingControllerTest {
     @Mock
     private ParkingService parkingService;
@@ -36,10 +37,10 @@ public class ParkingControllerTest {
     @Test
     void testParkedVehicles() {
 
-        List<VehicleEntity> parkedVehicles = Arrays.asList(new VehicleEntity(), new VehicleEntity());
+        List<VehicleDTO> parkedVehicles = Arrays.asList(new VehicleDTO(), new VehicleDTO());
         when(parkingService.getAllParkedVehicles()).thenReturn(parkedVehicles);
 
-        ResponseEntity<List<VehicleEntity>> response = parkingController.parkedVehicles();
+        ResponseEntity<List<VehicleDTO>> response = parkingController.parkedVehicles();
 
         assertNotNull(response);
         assertEquals(200, response.getStatusCodeValue());
@@ -52,13 +53,16 @@ public class ParkingControllerTest {
 
         ParkRequest parkRequest = new ParkRequest();
         parkRequest.setVehicleType("CAR");
-        when(parkingService.parkVehicle(VehicleType.CAR)).thenReturn(1L);
+        VehicleDTO vehicleDTO= VehicleDTO.builder().vehicleId(1L).parked(Boolean.TRUE).build();
+        when(parkingService.parkVehicle(VehicleType.CAR)).thenReturn(vehicleDTO);
 
-        ResponseEntity<Long> response = parkingController.parkVehicle(parkRequest);
+        ResponseEntity<VehicleDTO> response = parkingController.parkVehicle(parkRequest);
+        VehicleDTO vehicle= response.getBody();
 
         assertNotNull(response);
         assertEquals(200, response.getStatusCodeValue());
-        assertEquals(1L, response.getBody());
+        assertEquals(1L, vehicle.getVehicleId());
+        assertTrue(vehicle.getParked());
         verify(parkingService, times(1)).parkVehicle(VehicleType.CAR);
     }
 
@@ -77,14 +81,14 @@ public class ParkingControllerTest {
 
     @Test
     void testRemoveVehicle() {
+        VehicleDTO vehicleDTO= VehicleDTO.builder().vehicleId(1L).parked(false).build();
+        when(parkingService.removeVehicle(1L)).thenReturn(vehicleDTO);
 
-        when(parkingService.removeVehicle(1L)).thenReturn(true);
-
-        ResponseEntity<Boolean> response = parkingController.removeVehicle(1L);
+        ResponseEntity<VehicleDTO> response = parkingController.removeVehicle(1L);
 
         assertNotNull(response);
         assertEquals(200, response.getStatusCodeValue());
-        assertTrue(response.getBody());
+        assertFalse(response.getBody().getParked());
         verify(parkingService, times(1)).removeVehicle(1L);
     }
 
@@ -93,11 +97,11 @@ public class ParkingControllerTest {
 
         when(parkingService.countAvailableSpots(ParkingSpotType.REGULAR)).thenReturn(5L);
 
-        ResponseEntity<Long> response = parkingController.countAvailableSpots("REGULAR");
+        ResponseEntity<AvailableSpotResponse> response = parkingController.countAvailableSpots("REGULAR");
 
         assertNotNull(response);
         assertEquals(200, response.getStatusCodeValue());
-        assertEquals(5L, response.getBody());
+        assertEquals(5L, response.getBody().getFreeSpots().longValue());
         verify(parkingService, times(1)).countAvailableSpots(ParkingSpotType.REGULAR);
     }
 

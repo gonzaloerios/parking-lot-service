@@ -1,6 +1,7 @@
 package assessment.parkinglot.domain;
 
 import assessment.parkinglot.behavior.ParkBehavior;
+import assessment.parkinglot.dto.VehicleDTO;
 import assessment.parkinglot.enums.ParkingSpotType;
 import assessment.parkinglot.enums.VehicleType;
 import java.util.Map;
@@ -18,7 +19,7 @@ public class Van extends Vehicle {
       Map.of(ParkingSpotType.REGULAR, 3);
 
   @Override
-  public Long park(ParkBehavior parkBehavior) {
+  public VehicleDTO park(ParkBehavior parkBehavior) {
     return parkBehavior.park(this);
   }
 
