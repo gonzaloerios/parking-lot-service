@@ -10,6 +10,17 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * Configuration class that initializes the parking spot repository
+ * when the application starts.
+ *
+ * This class is responsible for creating and saving parking spots in the repository
+ * at application startup, distributing them into different types of spots: motorcycle,
+ * compact, and regular.
+ *
+ * Implements the {@link ApplicationRunner} interface to execute additional code
+ * after the application has started.
+ */
 @Configuration
 public class ParkingInitializer implements ApplicationRunner {
 

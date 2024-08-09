@@ -15,6 +15,7 @@ import assessment.parkinglot.enums.ParkingSpotType;
 import assessment.parkinglot.enums.VehicleType;
 import assessment.parkinglot.exception.PklBadRequestException;
 import assessment.parkinglot.exception.PklErrorException;
+import assessment.parkinglot.exception.PklNotFoundException;
 import assessment.parkinglot.repository.ParkingSpotRepository;
 import assessment.parkinglot.repository.VehicleRepository;
 import java.util.Collections;
@@ -137,9 +138,9 @@ class ParkingServiceImplTest {
   void removeVehicleNotFound() {
     when(vehicleRepository.findById(1L)).thenReturn(Optional.empty());
 
-    PklBadRequestException exception =
+    PklNotFoundException exception =
         assertThrows(
-            PklBadRequestException.class,
+                PklNotFoundException.class,
             () -> {
               parkingService.removeVehicle(1L);
             });

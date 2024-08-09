@@ -80,6 +80,7 @@ public class ParkingController {
         try{
             vehicleDTO= parkingService.removeVehicle(vehicleId);
         }catch (Exception e){
+            log.error("Error at removing a vehicle: " + e.getMessage(), e.getStackTrace());
             throw new PklErrorException(ErrorCode.UNABLE_TO_LEAVE_PARK);
         }
         return ResponseEntity.ok(vehicleDTO);
