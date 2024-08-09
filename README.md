@@ -1,4 +1,4 @@
-Swaggwe url: http://localhost:8080/swagger-ui/index.html
+Swagger url: http://localhost:8080/swagger-ui/index.html
 
 Assumptions:
 
