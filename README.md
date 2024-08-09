@@ -1,3 +1,5 @@
+Swaggwe url: http://localhost:8080/swagger-ui/index.html
+
 Assumptions:
 
 As stated in the requirements:

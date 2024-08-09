@@ -10,8 +10,8 @@ import assessment.parkinglot.entities.VehicleEntity;
 import assessment.parkinglot.enums.ErrorCode;
 import assessment.parkinglot.enums.ParkingSpotType;
 import assessment.parkinglot.enums.VehicleType;
-import assessment.parkinglot.exception.PklBadRequestException;
 import assessment.parkinglot.exception.PklErrorException;
+import assessment.parkinglot.exception.PklNotFoundException;
 import assessment.parkinglot.repository.ParkingSpotRepository;
 import assessment.parkinglot.repository.VehicleRepository;
 import java.util.List;
@@ -44,7 +44,7 @@ public class ParkingServiceImpl implements ParkingService {
   public VehicleDTO removeVehicle(Long vehicleId) {
     VehicleEntity vehicle = vehicleRepository.findById(vehicleId).orElse(null);
     if (vehicle == null) {
-      throw new PklBadRequestException(ErrorCode.VEHICLE_NOT_FOUND);
+      throw new PklNotFoundException(ErrorCode.VEHICLE_NOT_FOUND);
     }
 
     List<ParkingSpotEntity> occupiedSpots = parkingSpotRepository.findByVehicleId(vehicle.getId());
@@ -57,7 +57,7 @@ public class ParkingServiceImpl implements ParkingService {
 
     vehicleRepository.delete(vehicle);
 
-    return VehicleDTO.builder().vehicleId(vehicleId).parked(Boolean.FALSE).build();
+    return VehicleDTO.builder().vehicleId(vehicleId).type(vehicle.getType()).parked(Boolean.FALSE).build();
   }
 
   @Override
